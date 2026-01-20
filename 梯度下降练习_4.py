@@ -51,14 +51,14 @@ class GenerateLinearDataset:
         for i, (low, high) in enumerate(feature_ranges):
             X[:, i] = np.random.uniform(low, high, n_samples)
 
-        # 真实系数（包括截距）
+        # 真实系数(包括截距)
         true_intercept = 2.0
         true_coefficients = np.array([1.5, -0.8, 2.2, -1.1, 0.5, 3.0, -2.0, 0.3, 1.8, -0.7])
 
         # 计算无噪声的y值
         y_true = true_intercept + X @ true_coefficients
 
-        # 添加高斯噪声（标准差0.5）
+        # 添加高斯噪声(标准差0.5)
         noise = np.random.normal(0, 0.5, n_samples)
         y = y_true + noise
 
@@ -94,7 +94,7 @@ class GenerateLinearDataset:
             print(f"x{i+1}: 均值={X_train[:, i].mean():.2f}, 标准差={X_train[:, i].std():.2f}, "
                   f"范围=[{X_train[:, i].min():.2f}, {X_train[:, i].max():.2f}]")
 
-        print("\n真实系数（包括截距）:")
+        print("\n真实系数(包括截距):")
         coef_names = ['截距'] + [f'x{i+1}' for i in range(10)]
         for name, value in zip(coef_names, true_coef):
             print(f"{name}: {value}")
@@ -119,7 +119,7 @@ class Gradient_Descent:
         param_threshold: 参数变化阈值, 当参数变化小于此值时停止迭代
         loss_threshold: 损失变化阈值, 当损失变化小于此值时停止迭代
         """
-        # 修正初始化：11个参数（截距+10个特征权重）
+        # 修正初始化：11个参数(截距+10个特征权重)
         if k_init is None:
             # 初始化11个参数，全部设为0.00
             self.k = [0.00 for _ in range(11)]  # 11个参数：k[0]是截距，k[1]-k[10]是特征权重
@@ -127,8 +127,8 @@ class Gradient_Descent:
             self.k = k_init.copy()  # 使用传入的初始参数
         
         self.predictions = []  # 存储当前参数的预测值
-        self.X_current = None  # 当前使用的数据X（用于检查是否需要重新计算）
-        self.k_current = None  # 当前用于计算预测值的参数（用于检查是否需要重新计算）
+        self.X_current = None  # 当前使用的数据X(用于检查是否需要重新计算)
+        self.k_current = None  # 当前用于计算预测值的参数(用于检查是否需要重新计算)
         
         # 提前停止条件的阈值
         self.gradient_threshold = gradient_threshold
@@ -142,7 +142,7 @@ class Gradient_Descent:
     def compute_predictions(self, X, force_recompute=False):
         """
         计算所有样本的预测值
-        force_recompute: 强制重新计算（即使参数和数据没变）
+        force_recompute: 强制重新计算(即使参数和数据没变)
         
         为什么要有这个函数？
         - 避免在compute_loss和compute_gradients中重复计算预测值
@@ -153,7 +153,7 @@ class Gradient_Descent:
         k_current: 当前用于计算预测值的参数
         """
         # 检查是否需要重新计算：
-        # 1. 预测值列表为空（第一次计算）
+        # 1. 预测值列表为空(第一次计算)
         # 2. 数据X变了
         # 3. 参数k变了
         # 4. 强制重新计算
@@ -175,13 +175,13 @@ class Gradient_Descent:
     
     def compute_predictions(self, X, force_recompute=False):
         """
-        计算所有样本的预测值（向量化版本）
+        计算所有样本的预测值(向量化版本)
         """
         if (not self.predictions or X is not self.X_current or self.k != self.k_current or force_recompute):
             # 将 k 转换为 numpy 数组
             k_array = np.array(self.k)
         
-            # 在 X 前面添加一列 1（对应截距项）
+            # 在 X 前面添加一列 1(对应截距项)
             X_with_intercept = np.hstack([np.ones((X.shape[0], 1)), X])
         
             # 向量化计算：y_pred = X_with_intercept · k_array
@@ -195,9 +195,9 @@ class Gradient_Descent:
 
     def predict(self, X_sample):
         """
-        对单个样本进行预测（向量化版本）
+        对单个样本进行预测(向量化版本)
         """
-       # 在样本前面添加 1（对应截距项）
+       # 在样本前面添加 1(对应截距项)
         X_sample_with_intercept = np.hstack([1, X_sample])
         k_array = np.array(self.k)
 
@@ -205,7 +205,7 @@ class Gradient_Descent:
 
     def compute_loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
-        损失计算（完全向量化版本）
+        损失计算(完全向量化版本)
     
         Args:
             X: 特征集
@@ -223,10 +223,89 @@ class Gradient_Descent:
     
         return loss
     
+    
+    
+    def compute_gradients(self, X: np.ndarray, y: np.ndarray, k: list) -> np.ndarray:
+        """
+        梯度计算(完全向量化版本)
+
+        Args:
+            X: 特征集 (m, n)
+            y: 目标集 (m,)
+            k: 当前参数列表 (n+1个)
+
+        Returns:
+            gradients: np.ndarray: 梯度向量
+        """
+
+        m = len(X)
+
+        # 将参数列表转换为 numpy 数组
+        k_array = np.array(k)
+
+        # 在 X 前添加一列 1(截距项)
+        X_with_intercept = np.hstack([np.ones((m, 1)), X])
+
+        # 计算预测值
+        predictions = X_with_intercept @ k_array
+
+        # 计算误差
+        errors = predictions - y
+
+        # 向量化计算所有梯度：gradients = (1/m) * X^T @ errors
+        gradients = (X_with_intercept.T @ errors) / m
+
+        return gradients
+
+#============
+
+class Gradient_Descent_Old:
+    """
+    具体的训练流程, 但是传统方法
+    """
+    
+    def __init__ (self, k_init=None, gradient_threshold=1e-15, param_threshold=1e-6, loss_threshold=1e-15):
+        """
+        初始化梯度下降类
+        
+        参数:
+        k_init: 初始参数传入, 11个
+        gradient_threshold: 梯度阈值, 当梯度小于此值时停止迭代
+        param_threshold: 参数变化阈值, 当参数变化小于此值时停止迭代
+        loss_threshold: 损失变化阈值, 当损失变化小于此值时停止迭代
+        """
+        # 修正初始化：11个参数(截距+10个特征权重)
+        if k_init is None:
+            # 初始化11个参数，全部设为0.00
+            self.k = [0.00 for _ in range(11)]  # 11个参数：k[0]是截距，k[1]-k[10]是特征权重
+        else:
+            self.k = k_init.copy()  # 使用传入的初始参数
+        
+        self.predictions = []  # 存储当前参数的预测值
+        self.X_current = None  # 当前使用的数据X(用于检查是否需要重新计算)
+        self.k_current = None  # 当前用于计算预测值的参数(用于检查是否需要重新计算)
+        
+        # 提前停止条件的阈值
+        self.gradient_threshold = gradient_threshold
+        self.param_threshold = param_threshold
+        self.loss_threshold = loss_threshold
+        
+        # 添加一些训练过程中的记录
+        self.loss_history = []  # 记录每次迭代的损失值
+        self.gradient_history = []  # 记录每次迭代的梯度
+
+    def compute_prediction_Old(self, X, y):
+        """
+        预测计算, 但是old方法
+        写这个函数只是为了对比两种方法(循环/向量化)的计算方式对比, 两种函数在数学上应该是等价的
+        """
+
+        pass
+
     def compute_loss_Old (self, X, y) -> float:
         """
-        损失计算,但是纯循环计算的传统老方法
-        写这个函数只是为了对比两种方法(循环/向量化)的计算方式对比,两种函数在数学上应该是等价的
+        损失计算, 但是纯循环计算的传统老方法
+        写这个函数只是为了对比两种方法(循环/向量化)的计算方式对比, 同上
         
         Args:
             X: 特征集
@@ -245,40 +324,35 @@ class Gradient_Descent:
             loss = total_error / (2 * m)
 
         return loss
-    
-    def compute_gradients(self, X: np.ndarray, y: np.ndarray, k: list) -> np.ndarray:
+
+    def compute_gradients_Old (self, X, y, k):
         """
-        梯度计算（完全向量化版本）
+        梯度计算,但是老方法
+        写这个函数只是为了对比两种方法(循环/向量化)的计算方式对比, 同上
 
-        Args:
-            X: 特征集 (m, n)
-            y: 目标集 (m,)
+        Args: 
+            X: 特征集(m, n)
+            y: 目标集(m,)
             k: 当前参数列表 (n+1个)
-
-        Returns:
-            np.ndarray: 梯度向量
+        
+        Returns: 
+            k: 梯度列表
         """
 
         m = len(X)
+        gradients = [0.0 for _ in range(len(k)+1)]    # 初始化梯度列表
 
-        # 将参数列表转换为 numpy 数组
-        k_array = np.array(k)
+        for i in range(m):
+            prediction = self.compute_prediction_Old(X)
+            error = prediction - y[i]
+            
+            for j in range (len(k)+1):
+                gradients[j] += error * X[i][j]
 
-        # 在 X 前添加一列 1（截距项）
-        X_with_intercept = np.hstack([np.ones((m, 1)), X])
-
-        # 计算预测值
-        predictions = X_with_intercept @ k_array
-
-        # 计算误差
-        errors = predictions - y
-
-        # 向量化计算所有梯度：gradients = (1/m) * X^T @ errors
-        gradients = (X_with_intercept.T @ errors) / m
-
+        for j in range(len(k)+1):
+            gradients[j] /= m
+        
         return gradients
-
-#============
 
 def main():
     # 只生成数据，不打印详细信息
