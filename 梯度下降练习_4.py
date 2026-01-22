@@ -294,13 +294,29 @@ class Gradient_Descent_Old:
         self.loss_history = []  # 记录每次迭代的损失值
         self.gradient_history = []  # 记录每次迭代的梯度
 
-    def compute_prediction_Old(self, X, y):
+    def compute_predictions_Old(self, X, force_recompute=False):
         """
-        预测计算, 但是old方法
-        写这个函数只是为了对比两种方法(循环/向量化)的计算方式对比, 两种函数在数学上应该是等价的
+        计算所有样本的预测值
+        force_recompute: 强制重新计算（即使参数和数据没变）
+        
         """
-
-        pass
+        # 检查是否需要重新计算：
+        # 1. 预测值列表为空（第一次计算）
+        # 2. 数据X变了
+        # 3. 参数k变了
+        # 4. 强制重新计算
+        if (not self.predictions or X != self.X_current or self.k != self.k_current or force_recompute):
+            
+            self.predictions = []  # 清空旧的预测值
+            for i in range(len(X)):
+                pred = sum(self.k[j] * X[i][j] for j in range(len(self.k)))
+                self.predictions.append(pred)
+            
+            # 记录当前状态，方便下次检查
+            self.X_current = X[:] if isinstance(X, list) else X.copy()
+            self.k_current = self.k.copy()
+        
+        return self.predictions
 
     def compute_loss_Old (self, X, y) -> float:
         """
@@ -318,7 +334,7 @@ class Gradient_Descent_Old:
         total_error = 0.00
 
         for i in range(m):
-            preddictions = self.compute_predictions(X)
+            preddictions = self.compute_predictions_Old(X)
             error = preddictions - y[i]
             total_error += error ** 2
             loss = total_error / (2 * m)
@@ -343,7 +359,7 @@ class Gradient_Descent_Old:
         gradients = [0.0 for _ in range(len(k)+1)]    # 初始化梯度列表
 
         for i in range(m):
-            prediction = self.compute_prediction_Old(X)
+            prediction = self.compute_predictions_Old(X)
             error = prediction - y[i]
             
             for j in range (len(k)+1):
@@ -353,6 +369,16 @@ class Gradient_Descent_Old:
             gradients[j] /= m
         
         return gradients
+
+    def updata_parameters (self, gradients, learning_rate = 0.01):
+        """
+        参数更新
+        """
+        for j in range(len(self.k)):
+            self.k[j] -= learning_rate * gradients[j]
+        return self.k
+
+#============
 
 def main():
     # 只生成数据，不打印详细信息
@@ -380,6 +406,10 @@ def main():
     print("\n系数对比:")
     print(f"真实系数: {true_coef}")
     print(f"初始系数: {gd.k}")
+
+
+
+    
 
 if __name__ == "__main__":
     main()
