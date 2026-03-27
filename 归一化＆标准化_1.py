@@ -16,18 +16,19 @@ class IrisDataset:
         self.y = iris.target
         self.feature_names = iris.feature_names
         self.target_names = iris.target_names
-        
-        if print_info:
-            self._print_info()
-        
+
         # 分割数据集
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.X, self.y,
             test_size=test_size,
             random_state=random_state,
             stratify=self.y   # 分类问题建议分层抽样
+            
         )
-    
+
+        if print_info:
+            self._print_info()
+
     def _print_info(self):
         """内部方法：打印数据信息"""
         print("特征形状:", self.X.shape)
@@ -40,6 +41,7 @@ class IrisDataset:
     def get_train_data(self):
         """返回训练数据"""
         return self.X_train, self.y_train
+    
 
 #========
 class Z_score :
@@ -48,17 +50,38 @@ class Z_score :
     """
     def __init__(self):
          """
-         
+         参数初始化
          """
+         self.X = None
+         
+
+    def Mu (self, X):
+        """
+        平均值计算
+        """
+        m = len(X)
+        mu = 0.00
+
+        for i in range(m):
+            mu += X[i]
+
+        return mu / m
+
+    def Sigma (self, X, Mu):
+        """
+        总体标准差的标准差计算
+        """
+        m = len(X)
+        for i in range(0, m):
+            Sqrt = (X[i] - self.Mu(X)) ** 2
+        
+        return Sqrt / m
 
     def Zscore (self):
         """
         
         """
 
-        sigma = (
-             
-        )
 #========
 class Normalization :
     """
@@ -67,3 +90,14 @@ class Normalization :
 class Logic :
     """
     """
+
+#========
+
+def main():
+    IrisData = IrisDataset(print_info=True)
+    ZscoreModle = Z_score()
+
+    print(IrisData)
+
+if __name__ == "__main__":
+    main()
