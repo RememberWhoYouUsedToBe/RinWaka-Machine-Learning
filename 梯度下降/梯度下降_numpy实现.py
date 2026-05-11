@@ -95,6 +95,7 @@ class LinearRegression:
         ### 输出:
             - loss: 损失值 (float)
         """
+
         X_arr = np.asarray(X)
         y_arr = np.asarray(y)
         m = len(X_arr)
@@ -106,10 +107,19 @@ class LinearRegression:
     
     def compute_gradients (self, X, y, k):
         """
+        ## 梯度计算
+            计算梯度列表, 用于更新参数
+
+        ### 输入: 
+            - X: 训练集特征矩阵，形状 (m, n) 或可转换为ndarray的列表
+            - y: 标签集向量，形状 (m,) 或可转换为ndarray的列表
+            - k: 待更新的参数
         
+        ### 输出: 
+            - gradients: 参数列表
         """
         
-        pass
+        
 
 # === 运行区 ===
 
@@ -126,7 +136,6 @@ def main():
     # 计算当前参数下的损失
     loss_value = Model.compute_loss(X_data, y_data)
     print(f"初始损失 (theta = [0, 0, 0]) : {loss_value:.6f}")
-
 
 if __name__ == "__main__":
     main()
