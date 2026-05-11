@@ -18,7 +18,7 @@ class data:
     """
     ***数据集类***
 
-    真实模型: y = 1.0 + 0.5\*x1 + 1.0\*x2 
+    真实模型: y = 1.0 + 0.5\\*x1 + 1.0\\*x2 
     """
 
     X_train = [
@@ -62,10 +62,10 @@ class LinearRegression:
             - n_features: 特征数量(包含截距项), 默认为3
         
         ### 实参列表: 
-            - theta: [theta0, theta1, theta2] 初始化为 0
+            - k: [k0, k1, k2] 初始化为 0
         """
 
-        self.theta = np.zeros(n_features)
+        self.k = np.zeros(n_features)
         
     def compute_prediction (self, X: ArrayLike) -> np.ndarray:
         """
@@ -79,7 +79,7 @@ class LinearRegression:
         """
         # 将输入转换为 numpy 数组（若已是数组则不复制）
         X = np.asarray(X)
-        prediction = X @ self.theta
+        prediction = X @ self.k
 
         return prediction   # 返回预测向量
 
@@ -105,7 +105,7 @@ class LinearRegression:
 
         return loss
     
-    def compute_gradients (self, X, y, k):
+    def compute_gradients (self, X: ArrayLike, y: ArrayLike, k: np.ndarray) -> np.ndarray:
         """
         ## 梯度计算
             计算梯度列表, 用于更新参数
@@ -118,24 +118,82 @@ class LinearRegression:
         ### 输出: 
             - gradients: 参数列表
         """
-        
-        
 
+        X_arr = np.asarray(X)
+        y_arr = np.asarray(y)
+        k_arr = np.asarray(k)
+
+        m = len(X_arr)
+
+        # 预测误差向量 (m,)
+        error = X_arr @ k_arr - y_arr
+
+        # 梯度向量 (n,)
+        gradients = (1 / m) * (X_arr.T @ error)
+
+        return gradients
+
+    def update_parameters(self, X, y, learning_rate=0.01) -> None:
+        """
+        ## 完整更新过程
+            一次完整的参数更新过程
+
+        ### 输入：
+            - X: 训练集特征矩阵，形状 (m, n) 或可转换为ndarray的列表
+            - y: 标签集向量，形状 (m,) 或可转换为ndarray的列表
+            - k: 每次更新的参数
+
+        使用梯度下降更新模型参数 self.theta
+        """
+        grad = self.compute_gradients(X, y, self.k)
+        self.k -= learning_rate * grad
+        
 # === 运行区 ===
 
 def main():
-    """
-    # 主程序
-    """
-    # 创建模型实例（特征数为3）
     Model = LinearRegression(n_features=3)
     Data = data()
-    X_data = Data.X_train
-    y_data = Data.y_labels
+    X_raw = np.asarray(Data.X_train)
+    y_raw = np.asarray(Data.y_labels)
 
-    # 计算当前参数下的损失
-    loss_value = Model.compute_loss(X_data, y_data)
-    print(f"初始损失 (theta = [0, 0, 0]) : {loss_value:.6f}")
+    # 提取特征部分（不含截距列）进行标准化
+    X_features = X_raw[:, 1:]   # shape (10, 2)
+
+    mean = X_features.mean(axis=0)
+    std = X_features.std(axis=0)
+
+    # 标准化特征
+    X_features_scaled = (X_features - mean) / std
+
+    # 重新拼接截距列 1
+    X_scaled = np.column_stack([np.ones(len(X_raw)), X_features_scaled])
+
+    # 使用标准化后的数据进行训练
+    init_loss = Model.compute_loss(X_scaled, y_raw)
+    print(f"初始损失 (k = [0,0,0]) : {init_loss:.6f}")
+
+    learning_rate = 0.5   # 标准化后可以用更大的学习率
+    epochs = 10000
+
+    for i in range(epochs):
+        Model.update_parameters(X_scaled, y_raw, learning_rate)
+        if i % 50 == 0:
+            loss = Model.compute_loss(X_scaled, y_raw)
+            print(f"Epoch {i:4d} | Loss: {loss:.10f}")
+
+    # 将学习到的参数映射回原始尺度
+    k_scaled = Model.k
+    # 原始模型： y = k0 + k1 * x1 + k2 * x2
+    # 标准化后： x1' = (x1 - mean1)/std1, x2' = (x2 - mean2)/std2
+    # 缩放后模型： y = k0' + k1' * x1' + k2' * x2'
+    # 代回可得原始系数：
+    k1 = k_scaled[1] / std[0]
+    k2 = k_scaled[2] / std[1]
+    k0 = k_scaled[0] - k1 * mean[0] - k2 * mean[1]
+
+    print(f"\n学习到的原始尺度参数：")
+    print(f"k0 = {k0:.6f}, k1 = {k1:.6f}, k2 = {k2:.6f}")
+    print("真实参数应为：k0 = 1.5, k1 = 0.0, k2 = 0.5")
 
 if __name__ == "__main__":
     main()
